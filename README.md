@@ -47,7 +47,7 @@ rosrun clover_simulation aruco_gen --single-model --source-world=/home/clover/ca
 sed -i 's|clover_aruco.world|guap.world|g' /home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch
 ```
 
-#№ Проблема с кодировкой latin-1
+# Проблема с кодировкой latin-1
 
 Иногда, по непонятным причинам ни в Visual Studio Code, ни в терминале питон программа не запускается. Пишет ошибку с latin-1. Способ решения проблемы:
 
