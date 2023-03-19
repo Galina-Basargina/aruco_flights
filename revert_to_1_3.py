@@ -111,7 +111,10 @@ if __name__ == '__main__':
 
         # полёт к маркеру на высоте 1 метр
         if markerX:
-            offset_yxz = {'y': -markerX[0], 'x': -markerX[1], 'z': markerX[2]}
+            # мы не пользуемся измерениями телеметрии, поэтому точная высота подъема нам
+            # не известна, однако высотой мы считаем расстояние до маркера по Z.
+            current_elevation = markerX[2]
+            offset_yxz = {'y': -markerX[0], 'x': -markerX[1], 'z': 1.0 - current_elevation}
             print('Маркер #{n} найден со смещением'.format(n=markerN), offset_yxz)
 
             # во время полета к текущему маркеру ищем следующий маркер
@@ -120,10 +123,13 @@ if __name__ == '__main__':
             
             # запоминаем во время полета смещения всех точек 
             print('Полёт к маркеру #{n}'.format(n=n), offset_yxz)
-            navigate_wait(x=offset_yxz['x'], y=offset_yxz['y'], z=1.0-offset_yxz['z'], frame_id='body')
+            navigate_wait(x=offset_yxz['x'], y=offset_yxz['y'], z=offset_yxz['z'], frame_id='body')
             print('Прилетели к маркеру #{n}'.format(n=n))
             pos1, pos3 = calc_offsets(offset_yxz, pos1, pos3, n)
 
+    # последнее измерение высоты current_elevation было известно на последнем шаге облета
+    # в нашем случае это 4 маркер, к которому мы прилетим в зону сферы, то есть на высоту
+    # от 120 до 80 см (см. комментарий выше)
     print("----------\nОблёт маркеров закончен\n")
     
     # полет к маркеру 1 с запоминанием координат маркера 3 и задержкой
