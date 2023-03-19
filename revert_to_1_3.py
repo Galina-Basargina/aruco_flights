@@ -19,6 +19,7 @@ markerN = None
 markerX = None
 markersFound = None
 
+
 def markers_callback(msg):
     global markerX, markerN, markersFound
     if msg.markers:
@@ -34,6 +35,10 @@ def markers_callback(msg):
             markerX = (mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
         #for marker in msg.markers:
         #    print('Marker: %s' % marker)
+    #m0 = next((marker for marker in msg.markers if marker.id == 3), None)
+    #if m0:
+    #    print('  #0: ', {'x': m0.pose.position.x, 'y': m0.pose.position.y, 'z': m0.pose.position.z})
+
 
 def navigate_wait(x=0, y=0, z=0, yaw=float('nan'), yaw_rate=0, speed=0.5, \
         frame_id='body', tolerance=0.2, auto_arm=False):
@@ -46,10 +51,36 @@ def navigate_wait(x=0, y=0, z=0, yaw=float('nan'), yaw_rate=0, speed=0.5, \
 
     while not rospy.is_shutdown():
         telem = get_telemetry(frame_id='navigate_target')
+        # print('Высота подъёма {z}, погрешность={t}'.format(z=telem.z, t=math.sqrt(telem.x ** 2 + telem.y ** 2 + telem.z ** 2)))
         if math.sqrt(telem.x ** 2 + telem.y ** 2 + telem.z ** 2) < tolerance:
             return res
         rospy.sleep(0.2)
         #rospy.spin()
+
+
+def calc_offsets(offset, pos1, pos3, current_pos):
+    # складываю расстояние до уже ранее найденных плиток с расстоянием,
+    # на которое хочу пролететь
+    if pos1:
+        pos1['x'] += -offset['x']
+        pos1['y'] += -offset['y']
+        print('Изменилось расстояние до плитки 1:', pos1)
+    if pos3:
+        pos3['x'] += -offset['x']
+        pos3['y'] += -offset['y']
+        print('Изменилось расстояние до плитки 3:', pos3)
+
+    # Обнуляем координаты как только переместились к искомым плиткам
+    if current_pos == 1:
+        pos1 = {'x': 0, 'y': 0}
+    if current_pos == 3:
+        pos3 = {'x': 0, 'y': 0}
+    
+    print('Расстояние от дрона до плитки 1:', pos1)
+    print('Расстояние от дрона до плитки 3:', pos3) 
+
+    return pos1, pos3
+
 
 if __name__ == '__main__':
     rospy.init_node('flight')
@@ -65,79 +96,53 @@ if __name__ == '__main__':
     for n in range(5):
         # поиск маркера n
         while not markerX:
-            print('Взлёт на 0.5 метрa, поиск маркера #', markerN)
+            # особенность работы функции navigate_wait - она ожидает пока дрон не прилетит
+            # в указанную точку, оценка прилета выполняется с учетом погрешности (потому как
+            # дрон сдувается ветром, и прилетает он не в указанную точку, а внутрь сферы
+            # вокруг этой точки); функция меряет погрешность прилета в сферу, по умолчанию
+            # радиус сферы = 20 см
+            # ---
+            # Когда дрон взлетает его немного сдувает, но взлет на 0.5м выполняется до границы 
+            # сферы (которая R=20см) выполняется с недолетом около 16 см; итого: 6 подъемов 
+            # по 0.5м это не 3м, а 2м. То есть дрон взлетает на мельшую высоту (ехехехехе)
+            print('Подъём на 0.5 метрa, поиск маркера #{n}'.format(n=markerN))
             navigate_wait(z=0.5, frame_id='body', auto_arm=auto_arm)
             auto_arm = False
 
         # полёт к маркеру на высоте 1 метр
         if markerX:
-            yxz = {'y': markerX[0], 'x': markerX[1], 'z': markerX[2]}
-            print('Маркер #', markerN, 'найден со смещением', yxz)
-            markerN = n + 1
-            markerX = None
+            offset_yxz = {'y': -markerX[0], 'x': -markerX[1], 'z': markerX[2]}
+            print('Маркер #{n} найден со смещением'.format(n=markerN), offset_yxz)
 
             # во время полета к текущему маркеру ищем следующий маркер
-            print('Полёт к маркеру #', n, yxz)
-            navigate_wait(x=-yxz['x'], y=-yxz['y'], z=1.0-yxz['z'], frame_id='body')
-            print('Прилетели к маркеру #', n)
-
-            # складываю расстояние до уже ранее найденных плиток с расстоянием,
-            # на которое хочу пролететь
-            if pos1:
-                pos1['x'] += yxz['x']
-                pos1['y'] += yxz['y']
-                print('Изменилось расстояние до плитки 1:', pos1)
-            if pos3:
-                pos3['x'] += yxz['x']
-                pos3['y'] += yxz['y']
-                print('Изменилось расстояние до плитки 3:', pos3)
-
-            # Обнуляем координаты как только переместились к искомым плиткам
-            if n == 1:
-                pos1 = {'x': 0, 'y': 0}
-            if n == 3:
-                pos3 = {'x': 0, 'y': 0}
+            markerN = n + 1
+            markerX = None
             
-            print('Расстояние от дрона до плитки 1:', pos1)
-            print('Расстояние от дрона до плитки 3:', pos3)
+            # запоминаем во время полета смещения всех точек 
+            print('Полёт к маркеру #{n}'.format(n=n), offset_yxz)
+            navigate_wait(x=offset_yxz['x'], y=offset_yxz['y'], z=1.0-offset_yxz['z'], frame_id='body')
+            print('Прилетели к маркеру #{n}'.format(n=n))
+            pos1, pos3 = calc_offsets(offset_yxz, pos1, pos3, n)
 
-    print('Облет маркеров закончен')
+    print("----------\nОблёт маркеров закончен\n")
     
     # полет к маркеру 1 с запоминанием координат маркера 3 и задержкой
     if pos1:
         offset = {'x': pos1['x'], 'y': pos1['y'], 'z': 0}
-        print('Полет к маркеру 1 по накопленным координатам:', offset)
+        # запоминаем во время полета смещения всех точек
+        print('Полёт к маркеру {n} по накопленным координатам:'.format(n=1), offset)
         navigate_wait(x=offset['x'], y=offset['y'], z=offset['z'], frame_id='body')
-        print('Прилетели к маркеру #', 1)
-
-        # складываю расстояние до уже ранее найденных плиток с расстоянием,
-        # на которое хочу пролететь
-        if pos1:
-            pos1['x'] += -offset['x']
-            pos1['y'] += -offset['y']
-            print('Изменилось расстояние до плитки 1:', pos1)
-        if pos3:
-            pos3['x'] += -offset['x']
-            pos3['y'] += -offset['y']
-            print('Изменилось расстояние до плитки 3:', pos3)
+        print('Прилетели к маркеру #{n}'.format(n=1))
+        pos1, pos3 = calc_offsets(offset, pos1, pos3, 1)
 
     # полет к маркеру 3 с запоминанием координат маркера 1 и задержкой
     if pos3:
         offset = {'x': pos3['x'], 'y': pos3['y'], 'z': 0}
-        print('Полет к маркеру 3 по накопленным координатам:', offset)
+        # запоминаем во время полета смещения всех точек
+        print('Полёт к маркеру {n} по накопленным координатам:'.format(n=3), offset)
         navigate_wait(x=offset['x'], y=offset['y'], z=offset['z'], frame_id='body')
-        print('Прилетели к маркеру #', 3)
+        print('Прилетели к маркеру #{n}'.format(n=3))
+        pos1, pos3 = calc_offsets(offset, pos1, pos3, 3)
 
-        # складываю расстояние до уже ранее найденных плиток с расстоянием,
-        # на которое хочу пролететь
-        if pos1:
-            pos1['x'] += -offset['x']
-            pos1['y'] += -offset['y']
-            print('Изменилось расстояние до плитки 1:', pos1)
-        if pos3:
-            pos3['x'] += -offset['x']
-            pos3['y'] += -offset['y']
-            print('Изменилось расстояние до плитки 3:', pos3)
-
-    print('Посадка')
+    print("----------\nПосадка")
     land()
