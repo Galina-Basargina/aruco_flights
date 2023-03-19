@@ -103,11 +103,41 @@ if __name__ == '__main__':
 
     print('Облет маркеров закончен')
     
+    # полет к маркеру 1 с запоминанием координат маркера 3 и задержкой
     if pos1:
-        print('Полет к маркеру 1 по накопленным координатам:', pos1)
-        navigate_wait(x=pos1['x'], y=pos1['y'],  z=0, frame_id='body')
-        #navigate_wait(z=-0.5, frame_id='body')
-        #navigate_wait(z=0.5, frame_id='body')
+        offset = {'x': pos1['x'], 'y': pos1['y'], 'z': 0}
+        print('Полет к маркеру 1 по накопленным координатам:', offset)
+        navigate_wait(x=offset['x'], y=offset['y'], z=offset['z'], frame_id='body')
+        print('Прилетели к маркеру #', 1)
+
+        # складываю расстояние до уже ранее найденных плиток с расстоянием,
+        # на которое хочу пролететь
+        if pos1:
+            pos1['x'] += -offset['x']
+            pos1['y'] += -offset['y']
+            print('Изменилось расстояние до плитки 1:', pos1)
+        if pos3:
+            pos3['x'] += -offset['x']
+            pos3['y'] += -offset['y']
+            print('Изменилось расстояние до плитки 3:', pos3)
+
+    # полет к маркеру 3 с запоминанием координат маркера 1 и задержкой
+    if pos3:
+        offset = {'x': pos3['x'], 'y': pos3['y'], 'z': 0}
+        print('Полет к маркеру 3 по накопленным координатам:', offset)
+        navigate_wait(x=offset['x'], y=offset['y'], z=offset['z'], frame_id='body')
+        print('Прилетели к маркеру #', 3)
+
+        # складываю расстояние до уже ранее найденных плиток с расстоянием,
+        # на которое хочу пролететь
+        if pos1:
+            pos1['x'] += -offset['x']
+            pos1['y'] += -offset['y']
+            print('Изменилось расстояние до плитки 1:', pos1)
+        if pos3:
+            pos3['x'] += -offset['x']
+            pos3['y'] += -offset['y']
+            print('Изменилось расстояние до плитки 3:', pos3)
 
     print('Посадка')
     land()
