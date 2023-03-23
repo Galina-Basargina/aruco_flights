@@ -46,7 +46,7 @@ rosrun clover_simulation aruco_gen --single-model --source-world=/home/clover/ca
 # подключаем мир
 sed -i 's|clover_aruco.world|guap.world|g' /home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch
 ```
-  если не получилось подключить факл, то переходим в /home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch, <arg name="world_name" value="$(find clover_simulation)/resources/worlds/text.world"/> меняем text на имя созданного мира
+  если не получилось подключить мир, то переходим в /home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch, <arg name="world_name" value="$(find clover_simulation)/resources/worlds/text.world"/> меняем text на имя созданного мира
 
 # Проблема с кодировкой latin-1
 
