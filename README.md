@@ -46,7 +46,14 @@ rosrun clover_simulation aruco_gen --single-model --source-world=/home/clover/ca
 # подключаем мир
 sed -i 's|clover_aruco.world|guap.world|g' /home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch
 ```
-  если не получилось подключить мир, то переходим в /home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch, <arg name="world_name" value="$(find clover_simulation)/resources/worlds/text.world"/> меняем text на имя созданного мира
+  
+# Чтобы подключиться к существующему миру...
+
+Надо посмотреть файл `/home/clover/catkin_ws/src/clover/clover/launch/aruco.launch` и найти название `???.txt` файла в параметре `map`.
+
+Также надо посмотреть `/home/clover/catkin_ws/src/clover/clover_simulation/launch/simulator.launch` и найти название `???.world` в параметре `world_name`.
+
+После чего поменять `???.txt` и перезапустить команду `rosrun clover_simulation aruco_gen  --single-model --source-world=/home/clover/catkin_ws/src/clover/clover_simulation/resources/worlds/clover.world /home/clover/catkin_ws/src/clover/aruco_pose/map/???.txt > /home/clover/catkin_ws/src/clover/clover_simulation/resources/worlds/???.world` с правильными названиями файлов.
 
 # Проблема с кодировкой latin-1
 
