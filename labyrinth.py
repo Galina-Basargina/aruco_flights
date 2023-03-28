@@ -28,7 +28,10 @@ def markers_callback(msg):
         if not l == markersFound:
             markersFound = l
             print('Detected markers:', markersFound)
-        markerN = msg.markers[0].id
+        mX = msg.markers[0]
+        markerN = mX.id
+        markerX = {'x': mX.pose.position.x, 'y': mX.pose.position.y, 'z': mX.pose.position.z}
+        #print('Detected markers:', l, mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
         #print(mX)
         #print('pose', mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
         #print('orie', mX.pose.orientation.x, mX.pose.orientation.y, mX.pose.orientation.z, mX.pose.orientation.w)
@@ -87,8 +90,8 @@ if __name__ == '__main__':
     pos1 = None
     pos3 = None
 
-    print('Подъём на 0.7 метра')
-    navigate_wait(z=0.7, frame_id='body', auto_arm=True)
+    print('Подъём на 0.5 метра')
+    navigate_wait(z=0.5, frame_id='body', auto_arm=True)
 
     # поворот в исходное положение
     print('Поворот в исходное положение')
@@ -98,13 +101,33 @@ if __name__ == '__main__':
     while markerN:
         if previousN == markerN:
             break
-
         previousN = markerN
+
         steps = (markerN & 0x1c) >> 2
         direction = markerN & 0x03
         replay = markerN >> 5
-        print('Найден маркер #{n} (шаги={s}, направление={d}, код={r})'.format(n=markerN, s=steps, d=direction, r=replay))
+        print('Найден маркер #{n} (шаги={s}, направление={d}, код={r}, x={x} y={y} z={z})'.
+              format(n=markerN, s=steps, d=direction, r=replay, x=markerX['x'], y=markerX['y'], z=markerX['z']))
+
         markerN = None
+
+        while True:
+            offset = math.sqrt(markerX['x'] ** 2 + markerX['y'] ** 2)
+            print('Зависаем над маркером #{n}, смещение={o}'.format(n=previousN, o=offset))
+            tolerance = 0.1
+            if offset > tolerance:
+                navigate_wait(x=-markerX['y'], y=-markerX['x'], frame_id='body', tolerance=tolerance)
+                if not markerN:
+                    print('Центр маркера #{n} потерян'.format(n=previousN))
+                    while not markerN:
+                        print('Подъём на 0.4 метрa, поиск маркера')
+                        navigate_wait(z=0.4, frame_id='body')
+                    print('Спуск до 0.5 метрa')
+                    navigate_wait(z=0.5-markerX['z'], frame_id='body')
+                    break
+            else:
+                print('Центр маркера #{n} найден, смещение={o}'.format(n=previousN, o=offset))
+                break
 
         if direction == 0:
             print('Без поворота')
@@ -124,5 +147,12 @@ if __name__ == '__main__':
         print('Летим прямо на {s}'.format(s=steps))
         navigate_wait(y=steps, frame_id='body')
 
+        while previousN == markerN:
+            print('Подъём на 0.4 метрa, поиск маркера')
+            navigate_wait(z=0.4, frame_id='body')
+        print('Спуск до 0.5 метрa')
+        navigate_wait(z=0.5-markerX['z'], frame_id='body')
+
     print("----------\nПосадка")
     land()
+ 
