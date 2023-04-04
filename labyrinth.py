@@ -172,20 +172,4 @@ if __name__ == '__main__':
         #        else:
         #            markers[i] = markerN
         #            break
-    # while True:
-    #        offset = math.sqrt(markerX['x'] ** 2 + markerX['y'] ** 2)
-    #        print('Зависаем над маркером #{n}, смещение={o}'.format(n=previousN, o=offset))
-    #        tolerance = 0.1
-    #        if offset > tolerance:
-    #            navigate_wait(x=-markerX['y'], y=-markerX['x'], frame_id='body', tolerance=tolerance)
-    #            if not markerN:
-    #                print('Центр маркера #{n} потерян'.format(n=previousN))
-    #                while not markerN:
-    #                    print('Подъём на 0.4 метрa, поиск маркера')
-    #                    navigate_wait(z=0.4, frame_id='body')
-    #                print('Спуск до 0.5 метрa')
-    #                navigate_wait(z=0.5-markerX['z'], frame_id='body')
-    #                break
-    #        else:
-    #            print('Центр маркера #{n} найден, смещение={o}'.format(n=previousN, o=offset))
-    #            break
+   
