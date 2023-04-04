@@ -1,4 +1,5 @@
 # Information: https://clover.coex.tech/en/snippets.html#navigate_wait
+# -*- coding: utf-8 -*-
 
 import math
 import rospy
@@ -14,6 +15,8 @@ set_velocity = rospy.ServiceProxy('set_velocity', srv.SetVelocity)
 set_attitude = rospy.ServiceProxy('set_attitude', srv.SetAttitude)
 set_rates = rospy.ServiceProxy('set_rates', srv.SetRates)
 land = rospy.ServiceProxy('land', Trigger)
+
+rospy.init_node('flight')
 
 markerN = None
 markerX = None
@@ -89,6 +92,7 @@ if __name__ == '__main__':
     previousN = None
     pos1 = None
     pos3 = None
+    markers = [0]*11
 
     print('Подъём на 0.5 метра')
     navigate_wait(z=0.5, frame_id='body', auto_arm=True)
@@ -99,6 +103,19 @@ if __name__ == '__main__':
     rospy.sleep(2)
 
     while markerN:
+        i = 0
+        while True:
+           
+            if markerN == markers[i]:
+                break
+            else:
+                if not markers[i] == 0:
+                    i += 1
+                else:
+                    markers[i] = markerN
+                    print('used markers:', markers)
+                    continue
+
         if previousN == markerN:
             break
         previousN = markerN
@@ -148,28 +165,13 @@ if __name__ == '__main__':
         navigate_wait(y=steps, frame_id='body')
 
         while previousN == markerN:
-            print('Подъём на 0.4 метрa, поиск маркера')
-            navigate_wait(z=0.4, frame_id='body')
+            if steps == 0:
+                print("----------\nПосадка")
+                land()
+                break
+            else:
+                print('Подъём на 0.4 метрa, поиск маркера')
+                navigate_wait(z=0.4, frame_id='body')
         print('Спуск до 0.5 метрa')
         navigate_wait(z=0.5-markerX['z'], frame_id='body')
-
-    print("----------\nПосадка")
-    land()
- 
-    #if not steps == 0:
-    #        print('Летим прямо на {s}'.format(s=steps))
-    #        navigate_wait(y=steps, frame_id='body')
-    #    else:
-    #        print("----------\nПосадка")
-    #        land()
-    #while True:
-        #    i = 0
-        #    if markerN == markers[i]:
-        #        break
-        #    else:
-        #        if not markers[i] == 0:
-        #            i += 1
-        #        else:
-        #            markers[i] = markerN
-        #            break
-   
+        
