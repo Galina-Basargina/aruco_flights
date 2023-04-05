@@ -26,18 +26,33 @@ markersFound = None
 def markers_callback(msg):
     # алгоритм обнаруживает ближайший маркет, пока для простоты находим первый попавшийся маркер
     global markerX, markerN, markersFound
-    if msg.markers and len(msg.markers) == 1:
+    if msg.markers:
         l = [m.id for m in msg.markers]
         if not l == markersFound:
             markersFound = l
             print('Detected markers:', markersFound)
-        mX = msg.markers[0]
-        markerN = mX.id
-        markerX = {'x': mX.pose.position.x, 'y': mX.pose.position.y, 'z': mX.pose.position.z}
-        #print('Detected markers:', l, mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
-        #print(mX)
-        #print('pose', mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
-        #print('orie', mX.pose.orientation.x, mX.pose.orientation.y, mX.pose.orientation.z, mX.pose.orientation.w)
+        if len(msg.markers) == 1:
+            mX = msg.markers[0]
+            markerN = mX.id
+            markerX = {'x': mX.pose.position.x, 'y': mX.pose.position.y, 'z': mX.pose.position.z}
+            #print('Detected markers:', l, mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
+            #print(mX)
+            #print('pose', mX.pose.position.x, mX.pose.position.y, mX.pose.position.z)
+            #print('orie', mX.pose.orientation.x, mX.pose.orientation.y, mX.pose.orientation.z, mX.pose.orientation.w)
+        elif len(msg.markers) >= 2:
+            # поиск ближайшего маркера
+            l2 = None
+            for m in msg.markers:
+                x = m.pose.position.x
+                y = m.pose.position.y
+                z = m.pose.position.z
+                l1 = math.sqrt(x**2 + y**2 + z**2)
+                if l2 is None or l2 > l1:
+                    l2 = l1
+                    markerN = m.id
+                    markerX = {'x': x, 'y': y, 'z': z}
+            print('Ближайший маркер #{n} на дистанции {l2}'.format(n=markerN, l2=l2))
+            
 
 
 def navigate_wait(x=0, y=0, z=0, yaw=float('nan'), yaw_rate=0, speed=0.5, \
@@ -94,8 +109,8 @@ if __name__ == '__main__':
     pos3 = None
     markers = [0]*11
 
-    print('Подъём на 0.5 метра')
-    navigate_wait(z=0.5, frame_id='body', auto_arm=True)
+    print('Подъём на 0.8 метра')
+    navigate_wait(z=0.8, frame_id='body', auto_arm=True)
 
     # поворот в исходное положение
     print('Поворот в исходное положение')
@@ -105,16 +120,14 @@ if __name__ == '__main__':
     while markerN:
         i = 0
         while True:
-           
             if markerN == markers[i]:
                 break
+            if not markers[i] == 0:
+                i += 1
             else:
-                if not markers[i] == 0:
-                    i += 1
-                else:
-                    markers[i] = markerN
-                    print('used markers:', markers)
-                    continue
+                markers[i] = markerN
+                print('used markers:', markers)
+                continue
 
         if previousN == markerN:
             break
@@ -139,8 +152,8 @@ if __name__ == '__main__':
                     while not markerN:
                         print('Подъём на 0.4 метрa, поиск маркера')
                         navigate_wait(z=0.4, frame_id='body')
-                    print('Спуск до 0.5 метрa')
-                    navigate_wait(z=0.5-markerX['z'], frame_id='body')
+                    print('Спуск до 0.8 метрa')
+                    navigate_wait(z=0.8-markerX['z'], frame_id='body')
                     break
             else:
                 print('Центр маркера #{n} найден, смещение={o}'.format(n=previousN, o=offset))
@@ -172,6 +185,6 @@ if __name__ == '__main__':
             else:
                 print('Подъём на 0.4 метрa, поиск маркера')
                 navigate_wait(z=0.4, frame_id='body')
-        print('Спуск до 0.5 метрa')
-        navigate_wait(z=0.5-markerX['z'], frame_id='body')
+        print('Спуск до 0.8 метрa')
+        navigate_wait(z=0.8-markerX['z'], frame_id='body')
         
