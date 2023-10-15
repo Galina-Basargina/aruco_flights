@@ -35,16 +35,21 @@ class TelegaGetHandler(BaseHTTPRequestHandler):
         print(q)
         if q.get('do'):
             do = q.get('do')
-            if len(do) == 1:
-                self.send_response(200)
-                self.send_header("Content-type", "applicaiton/json")
-                self.end_headers()
-                #a = {'do': do[0], 'speed': 1, 'altitude': 4.5}
-                a = {'do': do[0], 'error': 'нет подключения к дрону'}
-                self.wfile.write(json.dumps(a).encode())
-                return
-        self.send_response(403)
+            if len(do) == 1 and do[0] == 'Move':
+                if q.get('street'):
+                    street = q.get('street')
+                    if len(street) == 1:
+                        self.send_response(200)
+                        self.send_header("Content-type", "applicaiton/json")
+                        self.end_headers()
+                        a = {'do': do[0], 'speed': 1, 'altitude': 4.5}
+                        self.wfile.write(json.dumps(a).encode())
+                        return
+        self.send_response(200)
+        self.send_header("Content-type", "applicaiton/json")
         self.end_headers()
+        a = {'error': 'Неправильный формат команды'}
+        self.wfile.write(json.dumps(a).encode())
                 
 if __name__ == "__main__":
     run(handler_class=TelegaGetHandler)
