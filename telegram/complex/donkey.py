@@ -8,6 +8,7 @@ token = ""
 bot = telebot.TeleBot(token, parse_mode=None)
 weight_price = None
 delivery_price = None
+street_marker = None
 
 def run(command):
     url = f'http://{drone_service}:8081/'
@@ -51,15 +52,19 @@ def echo_all(message):
 
     elif message.text == "ул. Ватутина":
         text = "Ты выбрал адрес ул. Ватутина\n"
+        street_marker = 1
         delivery_price = 600
     elif message.text == "Витебский пр.":
         text = "Ты выбрал адрес Витебский пр.\n"
+        street_marker = 2
         delivery_price = 800
     elif message.text == "ул. Садовая":
         text = "Ты выбрал адрес ул. Садовая\n"
+        street_marker = 3
         delivery_price = 600
     elif message.text == "Невский пр.":
         text = "Ты выбрал адрес Невский пр.\n"
+        street_marker = 4
         delivery_price = 800
 
     else:
@@ -74,7 +79,7 @@ def echo_all(message):
         return
     bot.reply_to(message, text+"Стоимость доставки: "+str(delivery_price+weight_price))
     
-    response = run({'do': 'Start', 'altitude': 0.5})
+    response = run({'do': 'Move', 'street': street_marker})
     text = ''
     if response.get('error'):
         text += 'Ошибка: '+str(response.get('error'))
