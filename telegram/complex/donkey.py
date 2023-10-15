@@ -34,6 +34,11 @@ def send_welcome(message):
 Будь внимателен - напиши в точности так же как написано в списке!"""
    )
 
+@bot.message_handler(commands=['status'])
+def send_status(message):
+    response = run({'do': 'Status'})
+    bot.reply_to(message, json.dumps(response).encode())
+
 @bot.message_handler(func=lambda m: True)
 def echo_all(message):
     global delivery_price
