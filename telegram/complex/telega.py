@@ -39,7 +39,8 @@ class TelegaGetHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-type", "applicaiton/json")
                 self.end_headers()
-                a = {'name': 'Hello, World!', 'do': do[0], 'speed': 1}
+                #a = {'do': do[0], 'speed': 1, 'altitude': 4.5}
+                a = {'do': do[0], 'error': 'нет подключения к дрону'}
                 self.wfile.write(json.dumps(a).encode())
                 return
         self.send_response(403)
