@@ -37,7 +37,7 @@ print(9)
 
 navigate_wait(z=1, frame_id='aruco_0')
 print(0)
-set_effect(effect='fade', r=0, g=0, b=255)  #blue
+set_effect(effect='fade', r=0, g=0, b=255)  # blue
 navigate_wait(z=1, frame_id='aruco_21')
 print(21)
 navigate_wait(z=1, frame_id='aruco_30')
