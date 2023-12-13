@@ -24,8 +24,14 @@ land = rospy.ServiceProxy('land', Trigger)
 # lower_red = np.array([0, 0, 80])  # hsv(0,100,31)
 # upper_red = np.array([40, 40, 255])  # hsv(0,84,100)
 # color for dark red
-lower_red = np.array([0, 0, 140])
+lower_red = np.array([0, 0, 140])  # red
 upper_red = np.array([115, 115, 255])
+lower_blue = np.array([170, 0, 0])  # blue
+upper_blue = np.array([225, 170, 225])
+lower_green = np.array([0, 190, 0])  # green
+upper_green = np.array([175, 255, 210])
+lower_yellow = np.array([0, 205, 105])  # yellow
+upper_yellow = np.array([160, 255, 255])
 
 rospy.init_node('flight')
 bridge = CvBridge()
@@ -72,6 +78,7 @@ def calc_marker_center_px(c1, c2, c3, c4):
     x_aruco_px = (max_x - min_x) // 2 + min_x
     y_aruco_px = (max_y - min_y) // 2 + min_y
     return x_aruco_px, y_aruco_px
+
 
 
 @long_callback
@@ -155,7 +162,7 @@ image_sub = rospy.Subscriber('main_camera/image_raw', Image, image_callback)
 
 @long_callback
 def markers_callback(msg):
-    # print(msg)
+    print(msg)
     global g_markers
     if msg.markers is None:
         g_markers = None
