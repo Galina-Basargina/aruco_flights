@@ -348,24 +348,81 @@ g_drone_searching = False
 #        rospy.sleep(10)
 #        break
 
-for c in [g_yellow_found_circle,
-          g_red_found_circle,
-          g_blue_found_circle,
-          g_green_found_circle]:
+# for c in [g_yellow_found_circle,
+#           g_red_found_circle,
+#           g_blue_found_circle,
+#           g_green_found_circle]:
+#     if c and c.aruco_id:
+#         print(f'Go to {c.aruco_id} ({c.color.color})')
+#         print('Drone was at ' +
+#               '{:.2f},{:.2f}'.format(c.aruco_pose.x, c.aruco_pose.y) +
+#               ', circle was at ' +
+#               '{:.2f},{:.2f}'.format(c.x_metrs, c.y_metrs))
+#         x_offset: float = c.aruco_pose.x - c.x_metrs
+#         y_offset: float = c.aruco_pose.y - c.y_metrs
+#         print(f'Go to {c.aruco_id}, offset {x_offset},{y_offset}')
+#         navigate_wait(x=y_offset, y=x_offset, z=1.0, frame_id=f'aruco_{c.aruco_id}')
+#         rospy.sleep(5)
+
+# print('Go to 92')
+# navigate_wait(x=0, y=0, z=1, frame_id='aruco_92')
+
+
+def go_to_color(c):
     if c and c.aruco_id:
         print(f'Go to {c.aruco_id} ({c.color.color})')
         print('Drone was at ' +
-              '{:.2f},{:.2f}'.format(c.aruco_pose.x, c.aruco_pose.y) +
-              ', circle was at ' +
-              '{:.2f},{:.2f}'.format(c.x_metrs, c.y_metrs))
+            '{:.2f},{:.2f}'.format(c.aruco_pose.x, c.aruco_pose.y) +
+            ', circle was at ' +
+            '{:.2f},{:.2f}'.format(c.x_metrs, c.y_metrs))
         x_offset: float = c.aruco_pose.x - c.x_metrs
         y_offset: float = c.aruco_pose.y - c.y_metrs
         print(f'Go to {c.aruco_id}, offset {x_offset},{y_offset}')
         navigate_wait(x=y_offset, y=x_offset, z=1.0, frame_id=f'aruco_{c.aruco_id}')
         rospy.sleep(5)
 
-print('Go to 92')
-navigate_wait(x=0, y=0, z=1, frame_id='aruco_92')
+
+
+while True:
+    print('Go to input circle')
+    print('Variants: blue, red, yellow, green, * (for all colors), land')
+    inp_circle = input()
+    if inp_circle == 'blue':
+        if g_blue_found_circle is None:
+            print('blue is not found')
+            continue
+        go_to_color(g_blue_found_circle)
+        break
+    elif inp_circle == 'red':
+        if g_red_found_circle is None:
+            print('red is not found')
+            continue
+        go_to_color(g_red_found_circle)
+        break
+    elif inp_circle == 'green':
+        if g_green_found_circle is None:
+            print('green is not found')
+            continue
+        go_to_color(g_green_found_circle)
+        break
+    elif inp_circle == 'yellow':
+        if g_yellow_found_circle is None:
+            print('yellow is not found')
+            continue
+        go_to_color(g_yellow_found_circle)
+        break
+    elif inp_circle == '*':
+        for c in [g_yellow_found_circle,
+          g_red_found_circle,
+          g_blue_found_circle,
+          g_green_found_circle]:
+            go_to_color(c)
+    elif inp_circle == 'land':
+        break
+    else:
+        print('Your color is not there!')
+        continue
+
 
 print('Perform landing')
 land()
