@@ -37,11 +37,11 @@ class ColorCircle:
 
 
 g_red_circle: ColorCircle = ColorCircle(  # bgr8
-    np.array([29, 29, 51]),
+    np.array([29, 29, 135]),
     np.array([100, 100, 255]),  # np.array([88, 89, 255]),
     (220, 39, 214))
 g_blue_circle: ColorCircle = ColorCircle(  # bgr8
-    np.array([30, 28, 0]),
+    np.array([60, 28, 0]),
     np.array([204, 204, 52]),  # np.array([124, 124, 52]),
     (255, 225, 0))
 # g_green_circle: ColorCircle = ColorCircle(  # bgr8

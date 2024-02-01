@@ -57,12 +57,12 @@ class ColorCircle:
 
 g_red_circle: ColorCircle = ColorCircle(  # bgr8
     Color.RED,
-    np.array([29, 29, 51]),
+    np.array([29, 29, 135]),
     np.array([100, 100, 255]),  # np.array([88, 89, 255]),
     (220, 39, 214))
 g_blue_circle: ColorCircle = ColorCircle(  # bgr8
     Color.BLUE,
-    np.array([30, 28, 0]),
+    np.array([60, 28, 0]),
     np.array([204, 204, 52]),  # np.array([124, 124, 52]),
     (255, 225, 0))
 # g_green_circle: ColorCircle = ColorCircle(  # bgr8
@@ -145,29 +145,29 @@ image_sub = rospy.Subscriber('main_camera/image_raw', Image, image_callback)
 
 if __name__ == '__main__':
     print('Take off and hover 1 m above the ground')
-    navigate(x=0, y=0, z=1, frame_id='body', auto_arm=True)
+    navigate(x=0, y=0, z=1.5, frame_id='body', auto_arm=True)
     set_effect(r=0, g=0, b=0)
     rospy.sleep(3)
 
     for id, dx in [(20, 0), (16, 1), (12, 0), (14, 0), (22, 0)]:
         print(f'Go to {id}, dx={dx}')
-        navigate_wait(x=dx, y=0, z=1, frame_id=f'aruco_{id}')
+        navigate_wait(x=dx, y=0, z=1.5, frame_id=f'aruco_{id}')
 
-        # Wait for 5 seconds
-        rospy.sleep(3)
-        if g_near_color is None:
-            set_effect(r=0, g=0, b=0)
-        elif g_near_color == Color.RED:
-            set_effect(r=255, g=0, b=0)
-        elif g_near_color == Color.BLUE:
-            set_effect(r=0, g=0, b=255)
-        elif g_near_color == Color.YELLOW:
-            set_effect(r=255, g=255, b=0)
-        elif g_near_color == Color.GREEN:
-            set_effect(r=0, g=255, b=0)
         # Wait for 5 seconds
         rospy.sleep(5)
+        for i in range(3):
+            if g_near_color is None:
+                set_effect(r=0, g=0, b=0)
+            elif g_near_color == Color.RED:
+                set_effect(r=255, g=0, b=0)
+            elif g_near_color == Color.BLUE:
+                set_effect(r=0, g=0, b=255)
+            elif g_near_color == Color.YELLOW:
+                set_effect(r=255, g=255, b=0)
+            elif g_near_color == Color.GREEN:
+                set_effect(r=0, g=255, b=0)
+            rospy.sleep(1)
 
-    navigate_wait(x=0, y=0, z=1, frame_id=f'aruco_24')
+    navigate_wait(x=0, y=0, z=1.5, frame_id=f'aruco_24')
     print('Perform landing')
     land()

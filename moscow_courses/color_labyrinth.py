@@ -59,14 +59,14 @@ class ColorCircle:
 
 g_red_circle: ColorCircle = ColorCircle(  # bgr8
     Color.RED, 'red',
-    np.array([29, 29, 51]),
+    np.array([29, 29, 135]),
     np.array([100, 100, 255]),  # np.array([88, 89, 255]),
     (220, 39, 214),
     (255, 0, 0)  # rgb
 )
 g_blue_circle: ColorCircle = ColorCircle(  # bgr8
     Color.BLUE, 'blue',
-    np.array([30, 28, 0]),
+    np.array([60, 28, 0]),
     np.array([204, 204, 52]),  # np.array([124, 124, 52]),
     (255, 225, 0),
     (0, 0, 255)  # rgb
@@ -157,18 +157,18 @@ image_sub = rospy.Subscriber('main_camera/image_raw', Image, image_callback)
 
 def navigate_with_color(id: int, dx: int = 0):
     print(f'Go to {id}, dx={dx}')
-    navigate_wait(x=dx, y=0, z=1, frame_id=f'aruco_{id}')
+    navigate_wait(x=dx, y=0, z=1.5, frame_id=f'aruco_{id}')
     rospy.sleep(5)
     global g_colors, g_near_color
-    if g_near_color is None:
-        set_effect(r=0, g=0, b=0)
-    else:
-        for color in g_colors:
-            if g_near_color == color.color:
-                set_effect(r=color.led[0], g=color.led[1], b=color.led[2])
-                break
-    # Wait for 1 seconds
-    rospy.sleep(1)
+    for i in range(3):
+        if g_near_color is None:
+            set_effect(r=0, g=0, b=0)
+        else:
+            for color in g_colors:
+                if g_near_color == color.color:
+                    set_effect(r=color.led[0], g=color.led[1], b=color.led[2])
+                    break
+        rospy.sleep(1)
 
 
 if __name__ == '__main__':
@@ -185,7 +185,7 @@ if __name__ == '__main__':
             break
 
     print('Take off and hover 1 m above the ground')
-    navigate(x=0, y=0, z=1, frame_id='body', auto_arm=True)
+    navigate(x=0, y=0, z=1.5, frame_id='body', auto_arm=True)
     set_effect(r=0, g=0, b=0)
     rospy.sleep(5)
 
