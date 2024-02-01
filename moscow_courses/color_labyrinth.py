@@ -66,8 +66,8 @@ g_red_circle: ColorCircle = ColorCircle(  # bgr8
 )
 g_blue_circle: ColorCircle = ColorCircle(  # bgr8
     Color.BLUE, 'blue',
-    np.array([60, 28, 0]),
-    np.array([204, 204, 52]),  # np.array([124, 124, 52]),
+    np.array([50, 50, 0]),
+    np.array([255, 134, 10]),  # np.array([124, 124, 52]),
     (255, 225, 0),
     (0, 0, 255)  # rgb
 )

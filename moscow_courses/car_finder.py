@@ -70,8 +70,8 @@ g_red_circle: ColorCircle = ColorCircle(  # bgr8
     (220, 39, 214))
 g_blue_circle: ColorCircle = ColorCircle(  # bgr8
     Color.BLUE, 1,
-    np.array([60, 28, 0]),
-    np.array([204, 204, 52]),  # np.array([124, 124, 52]),
+    np.array([50, 50, 0]),
+    np.array([255, 134, 10]),  # np.array([124, 124, 52]),
     (255, 225, 0))
 g_green_circle: ColorCircle = ColorCircle(  # bgr8
     Color.GREEN, 1,
@@ -244,7 +244,7 @@ def calc_circles_center_metr(circles: typing.List[CircleData], markers):
         if x_circle_length_metrs and y_circle_length_metrs:
             x_avg: float = sum(x_circle_length_metrs) / len(x_circle_length_metrs)
             y_avg: float = sum(y_circle_length_metrs) / len(y_circle_length_metrs)
-            # print('X, Y:', x_avg, y_avg)
+            print('X, Y:', x_avg, y_avg)
             c.x_weight_metr = x_avg
             c.y_weight_metr = y_avg
 
@@ -355,25 +355,6 @@ def markers_callback(msg):
 
 rospy.Subscriber('aruco_detect/markers', MarkerArray, markers_callback)
 
-print('Take off and hover 1 m above the ground')
-navigate(x=0, y=0, z=1, frame_id='body', auto_arm=True)
-
-# Wait for 5 seconds
-rospy.sleep(5)
-
-print("Drone start searching")
-g_drone_searching = True
-
-set_effect(r=0, g=0, b=0)
-for x in [24, 12, 14, 26, 24]:
-    print(f'Go to {x}')
-    navigate_wait(x=0, y=0, z=1, frame_id=f'aruco_{x}')
-    # Wait for 5 seconds
-    rospy.sleep(5)
-
-print("Drone stop searching")
-g_drone_searching = False
-
 
 def find_car(c):
     print(f'Go to {c.aruco_id} ({c.color.color})')
@@ -397,16 +378,43 @@ def find_car(c):
         print('INCORRECT PARKING!!')
     else:
         set_effect(r=0, g=255, b=0)
-        print('Correct parking')
+        print('CORRECT PARKING')
 
 
-print('Searching finished')
-if g_blue_found_circle is None:
-    print('blue car is not found')
-elif not g_blue_found_circle.aruco_id:
-    print('blue car is not found')
-else:
-    find_car(g_blue_found_circle)
+if __name__ == '__main__':
+    ALTITUDE: float = 1.2
 
-print('Perform landing')
-land()
+    g_drone_searching = False
+    print(f'Take off and hover {ALTITUDE} m above the ground')
+    navigate(x=0, y=0, z=ALTITUDE, frame_id='body', auto_arm=True)
+
+    # Wait for 5 seconds
+    rospy.sleep(5)
+
+
+    set_effect(r=0, g=0, b=0)
+    for id, dx in [(16, 1)]:
+        print(f'Go to {id}')
+        navigate_wait(x=dx, y=0, z=ALTITUDE, frame_id=f'aruco_{id}')
+
+        # Wait for 5 seconds
+        rospy.sleep(5)
+
+        print("Drone start searching")
+        g_drone_searching = True
+        rospy.sleep(1)
+
+        print('Searching finished')
+        if g_blue_found_circle is None:
+            print('blue car is not found')
+        elif not g_blue_found_circle.aruco_id:
+            print('blue car is not found')
+        else:
+            find_car(g_blue_found_circle)
+
+        print("Drone stop searching")
+        g_drone_searching = False
+
+    navigate_wait(x=0, y=0, z=ALTITUDE, frame_id='aruco_24')
+    print('Perform landing')
+    land()
