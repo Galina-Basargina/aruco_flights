@@ -87,16 +87,18 @@ g_image_size_known: bool = False
 g_image_width: int = 0
 g_image_height: int = 0
 g_near_color: typing.Optional[Color] = None
+g_center_color = None
 
 
 def image_callback(data):
     img = bridge.imgmsg_to_cv2(data, 'bgr8')
-    global g_image_size_known, g_image_width, g_image_height
+    global g_image_size_known, g_image_width, g_image_height, g_center_color
     if not g_image_size_known:
         g_image_size_known = True
         g_image_width = data.width
         g_image_height = data.height
         print("Camera size: ", g_image_width, g_image_height)
+    g_center_color = img[g_image_height // 2][g_image_width // 2]
 
     global g_near_color
     g_near_color = None
@@ -155,19 +157,23 @@ if __name__ == '__main__':
 
         # Wait for 5 seconds
         rospy.sleep(5)
-        for i in range(3):
-            if g_near_color is None:
-                set_effect(r=0, g=0, b=0)
-            elif g_near_color == Color.RED:
-                set_effect(r=255, g=0, b=0)
-            elif g_near_color == Color.BLUE:
-                set_effect(r=0, g=0, b=255)
-            elif g_near_color == Color.YELLOW:
-                set_effect(r=255, g=255, b=0)
-            elif g_near_color == Color.GREEN:
-                set_effect(r=0, g=255, b=0)
+        for i in range(5):
+            # if g_near_color is None:
+            #     set_effect(r=0, g=0, b=0)
+            # elif g_near_color == Color.RED:
+            #     set_effect(r=255, g=0, b=0)
+            # elif g_near_color == Color.BLUE:
+            #     set_effect(r=0, g=0, b=255)
+            # elif g_near_color == Color.YELLOW:
+            #     set_effect(r=255, g=255, b=0)
+            # elif g_near_color == Color.GREEN:
+            #     set_effect(r=0, g=255, b=0)
+            if g_center_color is not None:
+                # print(g_center_color)
+                set_effect(r=g_center_color[2], g=g_center_color[1], b=g_center_color[0])
             rospy.sleep(1)
 
     navigate_wait(x=0, y=0, z=1.5, frame_id=f'aruco_24')
+    rospy.sleep(3)
     print('Perform landing')
     land()
