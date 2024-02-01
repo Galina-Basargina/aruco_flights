@@ -69,4 +69,4 @@ def start_file(filename):
 
 if __name__ == '__main__':
     #start_video()  # camera
-    start_file('../moscow_courses/all_colors_moscow.jpg')  # file
+    start_file('../moscow_courses/3_colors.png')  # file
