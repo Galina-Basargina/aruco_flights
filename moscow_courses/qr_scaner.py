@@ -20,7 +20,7 @@ set_velocity = rospy.ServiceProxy('set_velocity', srv.SetVelocity)
 set_attitude = rospy.ServiceProxy('set_attitude', srv.SetAttitude)
 set_rates = rospy.ServiceProxy('set_rates', srv.SetRates)
 land = rospy.ServiceProxy('land', Trigger)
-set_yaw = rospy.ServiceProxy('set_yaw', srv.SetYaw)
+# set_yaw = rospy.ServiceProxy('set_yaw', srv.SetYaw)
 
 
 def navigate_wait(x=0, y=0, z=0, yaw=math.nan, speed=0.5, frame_id='body', tolerance=0.2, auto_arm=False):
@@ -45,19 +45,22 @@ def yaw_wait_to_normal():
     while True:
         yaw = get_telemetry().yaw
         if abs(yaw) < g_max_yaw_radian:
-            set_yaw(yaw=-yaw, frame_id='body')
+            navigate(yaw=-yaw, frame_id='body', x=0, y=0, z=0)
+            rospy.sleep(0.5)
             break
         else:
             if yaw < 0.0:
-                set_yaw(yaw=g_max_yaw_radian, frame_id='body')
+                navigate(yaw=g_max_yaw_radian, frame_id='body', x=0, y=0, z=0)
+                rospy.sleep(0.5)
             else:
-                set_yaw(yaw=-g_max_yaw_radian, frame_id='body')
+                navigate(yaw=-g_max_yaw_radian, frame_id='body', x=0, y=0, z=0)
+                rospy.sleep(0.5)
 
 
 def yaw_wait(yaw: float):
     global g_max_yaw_gradus, g_max_yaw_radian
     for x in range(int(yaw) // g_max_yaw_gradus):
-        set_yaw(yaw=g_max_yaw_radian, frame_id='body')
+        navigate(yaw=g_max_yaw_radian, frame_id='body', x=0, y=0, z=0)
         rospy.sleep(0.5)
 
 
