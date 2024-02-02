@@ -18,22 +18,32 @@ bridge = CvBridge()
 image_pub = rospy.Publisher('~debug', Image)
 font = cv2.FONT_HERSHEY_SIMPLEX
 
+
 def image_callback(data):
     img = bridge.imgmsg_to_cv2(data, 'bgr8')
     barcodes = pyzbar.decode(img)
     if barcodes:
         # print(barcodes[0].polygon)
-        # print(barcodes[0].data.decode('utf-8'))
+        print(barcodes[0].data.decode('utf-8'))
         cv2.putText(img, barcodes[0].data.decode('utf-8'), (1, 20), font, 1, (0, 0, 255), 2)
         for i in range(4):
             cv2.line(img,
                      (barcodes[0].polygon[i].x, barcodes[0].polygon[i].y),
                      (barcodes[0].polygon[(i+1) % 4].x, barcodes[0].polygon[(i+1) % 4].y),
                      (0, 0, 255), 2)
+        # crash?
+        g_qr_data: str = barcodes[0].data.decode('utf-8')
+        qr_data = g_qr_data.split(' ')
+        print(g_qr_data, qr_data)
+        for i in range(len(qr_data) // 2):
+            x, y = float(qr_data[i * 2]), float(qr_data[i * 2 + 1])
+            print(f'Go to {x}, {y}')
     # publish image (to browser)
     image_pub.publish(bridge.cv2_to_imgmsg(img, 'bgr8'))
 
+
 image_sub = rospy.Subscriber('main_camera/image_raw', Image, image_callback)
+
 
 if __name__ == '__main__':
     while True:

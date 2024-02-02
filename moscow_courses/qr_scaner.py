@@ -1,4 +1,3 @@
-from re import A
 import rospy
 import cv2
 import math
@@ -106,6 +105,7 @@ def image_callback(data):
             # print(barcodes[0].data.decode('utf-8'))
             g_qr_finder = True
             g_qr_data = barcodes[0].data.decode('utf-8')
+            print('QR code found: ', g_qr_data)
             cv2.putText(img, g_qr_data, (1, 20), font, 1, (0, 0, 255), 2)
             set_effect(r=0, b=0, g=255)
             for i in range(4):
