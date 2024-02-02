@@ -93,10 +93,20 @@ rospy.init_node('drone_vision')
 bridge = CvBridge()
 image_pub = rospy.Publisher('~debug', Image)
 font = cv2.FONT_HERSHEY_SIMPLEX
-
+g_image_size_known: bool = False
+g_image_width: int = 0
+g_image_height: int = 0
+g_center_color = None
 
 def image_callback(data):
     img = bridge.imgmsg_to_cv2(data, 'bgr8')
+    global g_image_size_known, g_image_width, g_image_height, g_center_color
+    if not g_image_size_known:
+        g_image_size_known = True
+        g_image_width = data.width
+        g_image_height = data.height
+        print("Camera size: ", g_image_width, g_image_height)
+    g_center_color = img[g_image_height // 2][g_image_width // 2]
     global g_qr_finder, g_qr_data
     if not g_qr_finder:
         barcodes = pyzbar.decode(img)
@@ -107,7 +117,6 @@ def image_callback(data):
             g_qr_finder = True
             print('QR code found: ', g_qr_data)
             cv2.putText(img, g_qr_data, (1, 20), font, 1, (0, 0, 255), 2)
-            set_effect(r=0, b=0, g=255)
             for i in range(4):
                 cv2.line(img,
                          (barcodes[0].polygon[i].x, barcodes[0].polygon[i].y),
@@ -136,6 +145,10 @@ if __name__ == '__main__':
     for i in range(3):
         yaw_wait(360, 16, DX_AT_16, ALTITUDE-(0.2*i))
         if g_qr_finder:
+            set_effect(r=0, b=0, g=255)
+            rospy.sleep(2)
+            set_effect(r=0, b=0, g=0)
+
             qr_data = g_qr_data.split(' ')
             if qr_data[0] == 'b':
                 qr_data = qr_data[1:]
@@ -143,6 +156,11 @@ if __name__ == '__main__':
                 x, y = float(qr_data[i*2]), float(qr_data[i*2+1])
                 print(f'Go to {x}, {y}')
                 navigate_wait(x=x, y=y, z=ALTITUDE, frame_id='aruco_map')
+                rospy.sleep(1)
+                if g_center_color is not None:
+                    # print(g_center_color)
+                    set_effect(r=g_center_color[2], g=g_center_color[1], b=g_center_color[0])
+                rospy.sleep(1)
             break
 
     navigate_wait(x=0, y=0, z=ALTITUDE, frame_id='aruco_24')
