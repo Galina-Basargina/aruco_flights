@@ -39,6 +39,8 @@ def navigate_wait(x=0.0, y=0.0, z=0.0, yaw=math.nan, speed=0.5, frame_id='body',
 
 g_max_yaw_gradus: int = 5
 g_max_yaw_radian: float = math.radians(g_max_yaw_gradus)
+g_qr_finder: bool = False
+g_qr_data: typing.Optional[str] = None
 
 
 def yaw_wait_to_normal(id: int, dx: float, altitude: float):
@@ -66,8 +68,10 @@ def yaw_wait(yaw: float, id: int, dx: float, altitude: float):
     yaw_to: float = yaw_from + math.radians(yaw)
     rotate_to_plus: bool = yaw_to > yaw_from
 
-    global g_max_yaw_gradus, g_max_yaw_radian
+    global g_max_yaw_gradus, g_max_yaw_radian, g_qr_finder
     while True:
+        if g_qr_finder:
+            break
         if rotate_to_plus:
             yaw_rest = yaw_to - yaw_from
             if yaw_rest < g_max_yaw_radian:
@@ -83,7 +87,7 @@ def yaw_wait(yaw: float, id: int, dx: float, altitude: float):
             yaw_from -= g_max_yaw_radian
             navigate_wait(yaw=yaw_from, frame_id='aruco_map', x=1, y=2, z=altitude, tolerance=0.1)
         print(yaw_from)
-        rospy.sleep(0.5)
+        rospy.sleep(0.25)
 
 
 rospy.init_node('drone_vision')
@@ -94,18 +98,23 @@ font = cv2.FONT_HERSHEY_SIMPLEX
 
 def image_callback(data):
     img = bridge.imgmsg_to_cv2(data, 'bgr8')
-    barcodes = pyzbar.decode(img)
-    if barcodes:
-        # print(barcodes[0].polygon)
-        # print(barcodes[0].data.decode('utf-8'))
-        cv2.putText(img, barcodes[0].data.decode('utf-8'), (1, 20), font, 1, (0, 0, 255), 2)
-        for i in range(4):
-            cv2.line(img,
-                     (barcodes[0].polygon[i].x, barcodes[0].polygon[i].y),
-                     (barcodes[0].polygon[(i+1) % 4].x, barcodes[0].polygon[(i+1) % 4].y),
-                     (0, 0, 255), 2)
-    # publish image (to browser)
-    image_pub.publish(bridge.cv2_to_imgmsg(img, 'bgr8'))
+    global g_qr_finder, g_qr_data
+    if not g_qr_finder:
+        barcodes = pyzbar.decode(img)
+        if barcodes:
+            # print(barcodes[0].polygon)
+            # print(barcodes[0].data.decode('utf-8'))
+            g_qr_finder = True
+            g_qr_data = barcodes[0].data.decode('utf-8')
+            cv2.putText(img, g_qr_data, (1, 20), font, 1, (0, 0, 255), 2)
+            set_effect(r=0, b=0, g=255)
+            for i in range(4):
+                cv2.line(img,
+                         (barcodes[0].polygon[i].x, barcodes[0].polygon[i].y),
+                         (barcodes[0].polygon[(i+1) % 4].x, barcodes[0].polygon[(i+1) % 4].y),
+                         (0, 0, 255), 2)
+        # publish image (to browser)
+        image_pub.publish(bridge.cv2_to_imgmsg(img, 'bgr8'))
 
 
 image_sub = rospy.Subscriber('main_camera/image_raw', Image, image_callback)
@@ -117,15 +126,24 @@ if __name__ == '__main__':
 
     navigate_wait(x=0, y=0, z=ALTITUDE, frame_id='body', auto_arm=True)
     set_effect(r=0, b=0, g=0)
-    rospy.sleep(3)
+    rospy.sleep(4)
 
     navigate_wait(x=DX_AT_16, y=0, z=ALTITUDE, frame_id='aruco_16')
     # v0.24: set_yaw(yaw=math.radians(30), frame_id='body')
-    rospy.sleep(1)
-    yaw_wait_to_normal(16, DX_AT_16, ALTITUDE)
+    # gluchit: rospy.sleep(1)
+    # gluchit: yaw_wait_to_normal(16, DX_AT_16, ALTITUDE)
 
-    yaw_wait(360, 16, DX_AT_16, ALTITUDE)
+    for i in range(3):
+        yaw_wait(360, 16, DX_AT_16, ALTITUDE-(0.2*i))
+        if g_qr_finder:
+            qr_data = g_qr_data.split(' ')
+            for i in range(len(qr_data)//2):
+                x, y = float(qr_data[i*2]), float(qr_data[i*2+1])
+                print(f'Go to {x}, {y}')
+                navigate_wait(x=x, y=y, z=ALTITUDE, frame_id='aruco_map')
+            break
 
     navigate_wait(x=0, y=0, z=ALTITUDE, frame_id='aruco_24')
     rospy.sleep(3)
+    print('landing')
     land()
