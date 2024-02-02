@@ -34,8 +34,11 @@ def image_callback(data):
         # crash?
         g_qr_data: str = barcodes[0].data.decode('utf-8')
         qr_data = g_qr_data.split(' ')
+        if qr_data[0] == 'b':
+            qr_data = qr_data[1:]
         print(g_qr_data, qr_data)
         for i in range(len(qr_data) // 2):
+            print('----- -----')
             xb = qr_data[i * 2]
             yb = qr_data[i * 2 + 1]
             print(1, xb, yb, type(xb), type(yb))

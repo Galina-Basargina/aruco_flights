@@ -103,8 +103,8 @@ def image_callback(data):
         if barcodes:
             # print(barcodes[0].polygon)
             # print(barcodes[0].data.decode('utf-8'))
-            g_qr_finder = True
             g_qr_data = barcodes[0].data.decode('utf-8')
+            g_qr_finder = True
             print('QR code found: ', g_qr_data)
             cv2.putText(img, g_qr_data, (1, 20), font, 1, (0, 0, 255), 2)
             set_effect(r=0, b=0, g=255)
@@ -137,6 +137,8 @@ if __name__ == '__main__':
         yaw_wait(360, 16, DX_AT_16, ALTITUDE-(0.2*i))
         if g_qr_finder:
             qr_data = g_qr_data.split(' ')
+            if qr_data[0] == 'b':
+                qr_data = qr_data[1:]
             for i in range(len(qr_data)//2):
                 x, y = float(qr_data[i*2]), float(qr_data[i*2+1])
                 print(f'Go to {x}, {y}')
