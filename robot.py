@@ -21,19 +21,17 @@ land = rospy.ServiceProxy('land', Trigger)
 Marker = None
 Radius = 0.15
 
+
 def markers_callback(msg):
     global Marker
     Marker = [(x.pose.position.x, x.pose.position.y, x.pose.position.z) for x in msg.markers if x.id == 14]
     print('ID:', [x.id for x in msg.markers], 'POSE:', Marker)
-    #for marker in msg.markers:
+    # for marker in msg.markers:
     #    print('Marker: %s' % marker)
 
 
-def navigate_wait(x=0, y=0, z=0, yaw=float('nan'), yaw_rate=0, speed=0.5, \
-        frame_id='body', tolerance=0.2, auto_arm=False):
-
-    res = navigate(x=x, y=y, z=z, yaw=yaw, yaw_rate=yaw_rate, speed=speed, \
-        frame_id=frame_id, auto_arm=auto_arm)
+def navigate_wait(x=0.0, y=0.0, z=0.0, yaw=float('nan'), yaw_rate=0, speed=0.5, frame_id='body', tolerance=0.2, auto_arm=False):
+    res = navigate(x=x, y=y, z=z, yaw=yaw, speed=speed, frame_id=frame_id, auto_arm=auto_arm)  # yaw_rate=yaw_rate,
 
     if not res.success:
         return res
@@ -43,12 +41,14 @@ def navigate_wait(x=0, y=0, z=0, yaw=float('nan'), yaw_rate=0, speed=0.5, \
         if math.sqrt(telem.x ** 2 + telem.y ** 2 + telem.z ** 2) < tolerance:
             return res
         rospy.sleep(0.2)
-        #rospy.spin()
+        # rospy.spin()
+
 
 rospy.Subscriber('aruco_detect/markers', MarkerArray, markers_callback)
 
-#navigate_wait(z=3, auto_arm=True)
-navigate_wait(frame_id='aruco_map', x=0, y=0, z=2.5, auto_arm=True)
+
+# navigate_wait(z=3, auto_arm=True)
+navigate_wait(frame_id='body', x=0, y=0, z=1.5, auto_arm=True)
 flag = 0
 while True:
     rospy.sleep(0.1)
@@ -57,7 +57,7 @@ while True:
     m = Marker.copy()
     Marker = None
     if len(m) == 0:
-        if  flag == 0:
+        if flag == 0:
             continue
         else:
             break
@@ -66,8 +66,8 @@ while True:
     if m[0][2] < 0.30:
         break
     print('!!!!!!!!\n!!!!!!!!\n!!!!!!!!\n', m, dis, '!!!!!!!!\n!!!!!!!!\n!!!!!!!!\n')
-    navigate_wait(x = -m[0][1], y = -m[0][0], z = -0.3, tolerance=Radius)
+    navigate_wait(x=-m[0][1], y=-m[0][0], z=-0.3, tolerance=Radius)
     flag = 1
         
-#navigate_wait(frame_id='aruco_14', z=1)
+# navigate_wait(frame_id='aruco_14', z=1)
 land()
