@@ -1,3 +1,4 @@
+from re import A
 import rospy
 import cv2
 import math
@@ -88,16 +89,17 @@ def image_callback(data):
 image_sub = rospy.Subscriber('main_camera/image_raw', Image, image_callback)
 
 if __name__ == '__main__':
-    navigate_wait(x=0, y=0, z=1, frame_id='body', auto_arm=True)
+    ALTITUDE = 1.2
+    navigate_wait(x=0, y=0, z=ALTITUDE, frame_id='body', auto_arm=True)
     set_effect(r=0, b=0, g=0)
     rospy.sleep(5)
 
-    navigate_wait(x=1, y=0, z=1, frame_id='aruco_16')
+    navigate_wait(x=1, y=0, z=ALTITUDE, frame_id='aruco_16')
     rospy.sleep(3)
     yaw_wait_to_normal()
 
     yaw_wait(360)
 
-    navigate_wait(x=0, y=0, z=1, frame_id='aruco_24')
+    navigate_wait(x=0, y=0, z=ALTITUDE, frame_id='aruco_24')
     rospy.sleep(5)
     land()
