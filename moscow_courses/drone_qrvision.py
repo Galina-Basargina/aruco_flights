@@ -36,7 +36,11 @@ def image_callback(data):
         qr_data = g_qr_data.split(' ')
         print(g_qr_data, qr_data)
         for i in range(len(qr_data) // 2):
-            x, y = float(qr_data[i * 2]), float(qr_data[i * 2 + 1])
+            xb = qr_data[i * 2]
+            yb = qr_data[i * 2 + 1]
+            print(1, xb, yb, type(xb), type(yb))
+            x, y = float(xb), float(yb)
+            print(2, x, y)
             print(f'Go to {x}, {y}')
     # publish image (to browser)
     image_pub.publish(bridge.cv2_to_imgmsg(img, 'bgr8'))
