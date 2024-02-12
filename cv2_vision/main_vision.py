@@ -1,6 +1,7 @@
 # функции с работой камеры дрона в ВM
 
 import cv2
+import sys
 import vision
 
 def start_video():
@@ -69,5 +70,10 @@ def start_file(filename):
 
 if __name__ == '__main__':
     #start_video()  # camera
-    # start_file('../moscow_courses/3_colors.png')  # file
-    start_file('../moscow_courses/blue_moscow.jpg')
+
+    filename = '../moscow_courses/blue_moscow.jpg'
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+    img = cv2.imread(filename)
+    assert img is not None, 'file not found'
+    start_file(filename)
