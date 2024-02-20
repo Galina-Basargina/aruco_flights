@@ -9,6 +9,9 @@ from clover import long_callback
 from aruco_pose.msg import MarkerArray
 from enum import Enum
 import numpy as np
+from clover.srv import SetLEDEffect
+import typing
+
 
 rospy.init_node('parking')
 bridge = CvBridge()
@@ -25,6 +28,7 @@ set_velocity = rospy.ServiceProxy('set_velocity', srv.SetVelocity)
 set_attitude = rospy.ServiceProxy('set_attitude', srv.SetAttitude)
 set_rates = rospy.ServiceProxy('set_rates', srv.SetRates)
 land = rospy.ServiceProxy('land', Trigger)
+set_effect = rospy.ServiceProxy('led/set_effect', SetLEDEffect)  # define proxy to ROS-service
 
 
 def navigate_wait(x=0.0, y=0.0, z=0.0, yaw=math.nan, speed=0.5, frame_id='body', tolerance=0.15, auto_arm=False):
@@ -35,6 +39,12 @@ def navigate_wait(x=0.0, y=0.0, z=0.0, yaw=math.nan, speed=0.5, frame_id='body',
         telem = get_telemetry(frame_id='navigate_target')
         if math.sqrt(telem.x ** 2 + telem.y ** 2 + telem.z ** 2) < tolerance:
             return res
+        rospy.sleep(0.2)
+
+
+def land_wait():
+    land()
+    while get_telemetry().armed:
         rospy.sleep(0.2)
 
 
@@ -50,6 +60,8 @@ class State(Enum):
     COLORS = 9
     FINISHED = 10
     ROUTE = 11
+    STOP_COLORS = 12
+
 
 g_xmin = None
 g_xmax = None
@@ -57,10 +69,12 @@ g_ymin = None
 g_ymax = None
 g_state: State = State.HOME
 g_marker = None
-g_tests: int = None
-g_parking = None
-g_car = None
 g_is_simulation = rospy.get_param('/use_sim_time', False)
+g_m_blue = 0.0
+g_m_yellow = 0.0
+g_m_red = 0.0
+g_m_brown = 0.0
+g_m_green = 0.0
 
 g_lower_yellow = np.array([0, 70, 70])
 g_upper_yellow = np.array([55, 255, 255])
@@ -76,6 +90,7 @@ g_upper_green = np.array([int(164*1.3), 255, int(77*1.3)])
 
 g_lower_brown = np.array([120, 150, 140])
 g_upper_brown = np.array([255, 197, 180])
+
 
 def find_percent(img, low, up, pub=None) -> float:
     height: int = len(img)
@@ -111,12 +126,13 @@ rospy.Subscriber('aruco_detect/markers', MarkerArray, markers_callback)
 @long_callback
 def image_callback(data):
     global g_xmax, g_xmin, g_ymin, g_ymax, g_state
-    global g_tests, g_parking, g_car
+    global g_m_blue, g_m_yellow, g_m_red, g_m_brown, g_m_green
     img = bridge.imgmsg_to_cv2(data, 'bgr8')
     if g_ymax:
         crop = img[g_ymin:g_ymax+1, g_xmin:g_xmax+1]
         image_pub_crop.publish(bridge.cv2_to_imgmsg(crop, 'bgr8'))
         if g_state == State.COLORS:
+            # moment values
             blue_per = find_percent(crop, g_lower_blue, g_upper_blue)
             yellow_per = find_percent(crop, g_lower_yellow, g_upper_yellow)
             red_per = find_percent(crop, g_lower_red, g_upper_red, image_pub_percent)
@@ -134,9 +150,8 @@ def image_callback(data):
                 (green_per, 'green', (0,255,0)),
                 (15.0, 'empty', (0,0,0))
             ])
-
             print('blue', blue_per,
-                  'yellow:', yellow_per,
+                  'yellow', yellow_per,
                   'red', red_per,
                   'brown', brown_per,
                   'green', green_per,
@@ -146,9 +161,12 @@ def image_callback(data):
             cv2.rectangle(img, (290, 10), (300, 20), parking_color[2], -1)
             cv2.rectangle(img, (270, 10), (280, 20), car_color[2], -1)
 
-            g_tests += 1
-            g_parking = (g_parking[0]+blue_per, g_parking[1]+yellow_per)
-            g_car = (g_car[0]+red_per, g_car[1]+brown_per, g_car[2]+green_per)
+            # max values
+            g_m_blue = max(g_m_blue, blue_per)
+            g_m_yellow = max(g_m_yellow, yellow_per)
+            g_m_red = max(g_m_red, red_per)
+            g_m_brown = max(g_m_brown, brown_per)
+            g_m_green = max(g_m_green, green_per)
 
         cv2.rectangle(img, (g_xmin, g_ymin), (g_xmax, g_ymax), (0,0,255), 2)
     cv2.putText(img, str(g_state), (3, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2)
@@ -161,6 +179,19 @@ def change_state(state):
     global g_state
     g_state = state
     print(g_state)
+
+
+def parking_check(car: str, par: str) -> typing.Optional[bool]:
+    if car == 'empty' and par == 'aruco':
+        return None
+    elif car == 'empty' or par == 'aruco':
+        return True
+    elif car == 'red' and par == 'yellow':
+        return True
+    elif car == 'green' and par == 'blue':
+        return True
+    else:
+        return False
 
 
 if __name__ == "__main__":
@@ -189,7 +220,14 @@ if __name__ == "__main__":
         g_ymax = int(max(m.c1.y, m.c2.y, m.c3.y, m.c4.y))
         print(g_xmin, g_xmax, g_ymin, g_ymax)
         break
-    
+
+    count_car = 0
+    count_invalid = 0
+    count_abonement = 0
+    count_normal = 0
+    count_error = 0
+    f = open('C_report_fly_F_I.txt', 'wt+')
+
     change_state(State.ROUTE)
     for x,y in [(0,1),  # 20
                 (0,2),  # 16
@@ -211,19 +249,81 @@ if __name__ == "__main__":
         navigate_wait(x=x, y=y, z=ALTITUDE, frame_id='aruco_map', yaw=math.radians(0))
 
         change_state(State.STOP)
-        rospy.sleep(TIME)
-
-        g_tests = 0
-        g_parking = (0.0, 0.0)
-        g_car = (0.0, 0.0, 0.0)
-        change_state(State.COLORS)
         rospy.sleep(1)
-        change_state(State.FINISHED)
-        rospy.sleep(0.5)
-        print('RESULT:', g_tests, g_parking, g_car)
+
+        g_m_blue = 0.0
+        g_m_yellow = 0.0
+        g_m_red = 0.0
+        g_m_brown = 0.0
+        g_m_green = 0.0
+        change_state(State.COLORS)
+        rospy.sleep(TIME)
+        change_state(State.STOP_COLORS)
+        rospy.sleep(0.3)
+
+        parking_color_m = max(
+            [(g_m_blue, 'blue'),
+             (g_m_yellow, 'yellow'),
+             (15.0, 'aruco')]
+        )
+        car_color_m = max([
+            (g_m_red, 'red'),
+            (g_m_brown, 'brown'),
+            (g_m_green, 'green'),
+            (15.0, 'empty')
+        ])
+        car = car_color_m[1]
+        parking = parking_color_m[1]
+        print('blue', g_m_blue,
+              'yellow', g_m_yellow,
+              'red', g_m_red,
+              'brown', g_m_brown,
+              'green', g_m_green,
+              '-', parking_color_m[1], int(parking_color_m[0]), car_color_m[1], int(car_color_m[0]), 'MAX')
+
+        print('Result:', car, parking)
+        f.write(f'x{x} y{y} car {car} parking {parking}\n')
+        check = parking_check(car, parking)
+
+        if check is not None and check == False:
+            count_error += 1
+        if car == 'red':
+            count_invalid += 1
+            count_car += 1
+        elif car == 'green':
+            count_abonement += 1
+            count_car += 1
+        elif car == 'brown':
+            count_normal += 1
+            count_car += 1
+
+        if check is None:
+            print("No car and sign.\n")
+            pass
+        elif check:
+            print("Parking is OK.\n")
+            set_effect(b=0, g=255, r=0)
+            rospy.sleep(2)
+        else:
+            print("Parking is BAD.\n")
+            set_effect(b=0, g=0, r=255)
+            rospy.sleep(2)
+        set_effect(b=0, g=0, r=0)
+
+    str = f'car {count_car} ' \
+          f'invalid {count_invalid} ' \
+          f'abonement {count_abonement} ' \
+          f'normal {count_normal} ' \
+          f'error {count_error}\n'
+    print(str)
+    f.write(str)
+    f.close()
 
     change_state(State.BASE)
     navigate_wait(z=ALTITUDE, frame_id='aruco_24')
+    rospy.sleep(1)
+    navigate_wait(z=ALTITUDE, frame_id='aruco_24')
 
     change_state(State.LAND)
-    land()
+    land_wait()
+    change_state(State.FINISHED)
